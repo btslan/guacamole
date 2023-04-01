@@ -1,0 +1,137 @@
+Mettez à jour les paquets de votre système Ubuntu en exécutant la commande suivante :
+######
+
+sudo apt-get update && sudo apt-get upgrade
+
+Installez les dépendances nécessaires à l'aide de la commande suivante :
+######
+sudo apt install build-essential libcairo2-dev libjpeg-turbo8-dev \ libpng-dev libtool-bin libossp-uuid-dev libvncserver-dev \ freerdp2-dev libssh2-1-dev libtelnet-dev libwebsockets-dev \ libpulse-dev libvorbis-dev libwebp-dev libssl-dev \ libpango1.0-dev libswscale-dev libavcodec-dev libavutil-dev \ libavformat-dev
+
+Téléchargement de guacamole serveur:
+###########################
+wget https://downloads.apache.org/guacamole/1.3.0/source/guacamole-server-1.5.0.tar.gz
+
+###########################
+Extraction de guacamole serveur:
+
+tar -xvf guacamole-server-1.5.0.tar.gz
+
+Naviger vers le dossier extrait :
+
+cd guacamole-server-1.3.0
+
+INSTALLATION DE GUACAMOLE:
+sudo ./configure --with-init-dir=/etc/init.d --enable-allow-freerdp-snapshots
+sudo make
+sudo make install
+
+Mettre à jour bibliothèques installées et recharger systemd:
+sudo ldconfig
+sudo systemctl daemon-reload
+
+Demarrage de service guacamole:
+sudo systemctl start guacd
+sudo systemctl enable guacd
+
+
+Nous allons creer le repertoire pour stocker les fichiers de configuration et les extensions:
+sudo mkdir -p /etc/guacamole/{extensions,lib}
+
+INSTALLATION DE GUACAMOLE WEB APP:
+
+Installation de Tomcat
+sudo apt install tomcat9 tomcat9-admin tomcat9-common tomcat9-user
+
+Téléchargement de Guacamole client:
+wget https://downloads.apache.org/guacamole/1.5.0/binary/guacamole-1.5.0.war
+
+Déplacez le client vers le répertoire web de Tomcat:
+sudo mv guacamole-1.5.0.war /var/lib/tomcat9/webapps/guacamole.war
+
+Redemarrage de tomcat et guacamole serveur:
+sudo systemctl restart tomcat9 guacd
+
+#################
+INSTALLATION DE MYSQL SERVEUR
+#################
+sudo apt install mariadb-server
+Configuration de mysql :
+sudo mysql_secure_installation
+
+Télécharhement de connecteur MySQL/J (Java Connector).
+wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.26.tar.gz
+
+Extraction du fichier télécharger et copier le dans /etc/guacamole/lib
+tar -xf mysql-connector-java-8.0.26.tar.gz
+sudo cp mysql-connector-java-8.0.26/mysql-connector-java-8.0.26.jar /etc/guacamole/lib/
+
+Téléchargez le plugin d'authentification JDBC :
+wget https://downloads.apache.org/guacamole/1.5.0/binary/guacamole-auth-jdbc-1.5.0.tar.gz
+Extraire le fichier tar et copiez-le dans /etc/guacamole/extensions/
+
+tar -xf guacamole-auth-jdbc-1.3.0.tar.gz
+sudo mv guacamole-auth-jdbc-1.3.0/mysql/guacamole-auth-jdbc-mysql-1.3.0.jar /etc/guacamole/extensions/
+
+Nous allons mainteant connecter :
+mysql -u root -p
+
+creation de base de donne:
+CREATE DATABASE guacamole_db;
+
+creation de l'utilisateur:
+CREATE USER 'guacamole_user'@'localhost' IDENTIFIED BY 'password';
+Note : remplacer le 'password' par le mots de passe shouaiter.
+
+Nous allons donner toutes les access a la base de donner pour l'utilisateur guacamole_user
+
+GRANT ALL PRIVILEGES ON *.* TO 'guacamole_user'@'%' IDENTIFIED BY 'password';
+remplacer par le mots de passe choisi
+
+puis executer la commande: 
+FLUSH PRIVILEGES;
+
+puis executer la commande quit
+Localisez les fichiers de schéma dans le répertoire extrait pour le plugin JDBC:
+cd guacamole-auth-jdbc-1.5.0/mysql/schema
+
+importation de sql vers la base de donnee :
+cat *.sql | mysql -u root -p guacamole_db
+
+creation du ficier config:
+sudo nano /etc/guacamole/guacamole.properties
+
+# MySQL properties
+mysql-hostname: 127.0.0.1
+mysql-port: 3306
+mysql-database: guacamole_db
+mysql-username: guacamole_user
+mysql-password: [password]
+
+une fois rempli les information de base de donnne nous allons redemarré les service.
+sudo systemctl restart tomcat9 guacd mysql
+
+Nous avons installer correctement pour acceder a l'interface de gestion :
+Ouvez la page depuis le navigateur:
+http://IPDUSERVEUR:8080/guacamole 
+
+Nom d'utilisateur par defaut : guacadmin
+Mots de passe : guacadmin
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
